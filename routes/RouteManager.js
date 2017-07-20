@@ -28,7 +28,7 @@ function RouteManager(app, conf) {
 
 	let removeFile = function(files) {
 		return files.filter((file) => {
-			return file != FILE_NAME;
+			return file != FILE_NAME && file.includes('.js');
 		});
 	}
 

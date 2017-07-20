@@ -9,10 +9,11 @@ const RedisStore = require('connect-redis')(session);
 const config = require('./config');
 
 const app = express();
-
 //middleware
 app.use(bodyParser.json());
 app.use(morgan('dev'));
+app.use(passport.initialize());
+app.use(passport.session());
 
 //Routes
 const RouteManager = require('./routes/RouteManager')(app, config);

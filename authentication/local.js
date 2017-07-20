@@ -1,5 +1,12 @@
+const Router = require('express').Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
+
+const user = {
+	id: 1,
+	username: 'test',
+	password: 'test',
+};
 
 passport.use(new LocalStrategy(
 	function (username, password, next) {
@@ -16,4 +23,10 @@ passport.use(new LocalStrategy(
 			return next(null, user);
 		})
 	}
-))
+));
+
+function findUser(username, next) {
+	next(null, user);
+}
+
+module.exports = Router;
