@@ -1,12 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 const FILE_NAME = 'RouteManager.js';
-const RouteDir = __dirname;
 const routes = [];
 
-function RouteManager(app, conf) {
-	let expressApp = app;
-	let config = conf;
+function RouteManager(app, config, dir) {
 
 	this.createRoutes = function () {
 		readDir((files) => {
@@ -18,7 +15,7 @@ function RouteManager(app, conf) {
 	}
 
 	let readDir = function (next) {
-		fs.readdir(RouteDir, (err, files) => {
+		fs.readdir(dir, (err, files) => {
 			if (err) {
 				throw err;
 			}
@@ -34,7 +31,7 @@ function RouteManager(app, conf) {
 
 	let expandFileNames = function(files) {
 		return files.map((file) => {
-			return `./${file}`;
+			return `./${path.join(dir, file)}`;
 		});
 	}
 
@@ -46,11 +43,10 @@ function RouteManager(app, conf) {
 
 	let mapRoutes = function(files) {
 		files.forEach((file) => {
-			expressApp.use(config.apiPath, file);
+			app.use(config.apiPath, file);
 		});
 	}
 	this.createRoutes();
-	return RouteManager;
 }
 
 module.exports = RouteManager;
