@@ -1,4 +1,4 @@
-const Router = require('express').Router();
+const router = require('express').Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
@@ -25,8 +25,18 @@ passport.use(new LocalStrategy(
 	}
 ));
 
+router.post('/login',
+  passport.authenticate('local'),
+  function(req, res) {
+    res.send('test');
+  }
+);
+
 function findUser(username, next) {
+	if (username != user.username) {
+		return next(true);
+	}
 	next(null, user);
 }
 
-module.exports = Router;
+module.exports = router;
