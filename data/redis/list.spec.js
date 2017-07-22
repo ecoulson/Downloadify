@@ -1,4 +1,6 @@
 const assert = require('assert');
+const is = require('is_js');
+
 const ListTestKey = 'ListKey';
 const ListAddItem = 'test';
 const ListSetItem = 'newTest';
@@ -108,6 +110,19 @@ module.exports = function (lib) {
 				});
 			});
 		});
+
+		describe('#all', () => {
+			it(`Should get all elements from list`, (done) => {
+				lib.all(ListTestKey, (err, res) => {	
+					if (err) {
+						return done(err);
+					}
+					assert.equal(is.array(res), true);
+					assert.equal(res.length, FakeDataSize);
+					return done(err, res)
+				})
+			})
+		})
 
 		describe('#clear', () => {
 			it('Should clear the list of all data values', (done) => {
