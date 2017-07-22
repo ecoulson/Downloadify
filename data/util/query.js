@@ -1,3 +1,5 @@
+const Client = require('../client');
+
 const assert = require('assert');
 const is = require('is_js');
 
@@ -24,8 +26,21 @@ function Query(queryObj) {
 		return keys;
 	}
 
-	let searchCollections = function () {
+	let searchCollections = function (next) {
+		let client = Client.create();
+		client.Collection.getAll((err, res) => {
+			if (err) {
+				return next(err);
+			}
+			client.close(client);
+			let matchs = findMatches(res);
+		});
+	}
 
+	let findMatches = function (collections) {
+		return collections.filter((collection) => {
+			
+		})
 	}
 
 	deconstructQuery(keys, params);

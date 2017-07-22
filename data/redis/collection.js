@@ -1,6 +1,8 @@
-const List = require('./list');
 const assert = require('assert');
 const is = require('is_js');
+
+const List = require('./list');
+let list = {};
 
 const CollectionIDList = 'CollectionID';
 
@@ -46,8 +48,9 @@ function getCollectionsBy(key, query, next) {
 	key = getCollectionKey(key);
 	assert.equal(is.function(next), true);
 
-	query.searchCollections(() => {
-
+	query.searchCollections((res) => {
+		console.log(res);
+		return done(null, res);
 	})
 }
 
@@ -59,13 +62,23 @@ function createCollection(key, info, next) {
 	assert.equal(is.propertyDefined(info, 'key'), true);
 
 	info.id = incrementID();
-	List.add(CollectionIDList, id, (err, res) => {
+
+	list.add(CollectionIDList, info.id, (err, res) => {
+		if (err) {
+			return next(err);
+		}
 		connection.hmset(key, info, next);
 	});
 }
 
-function getAllCollections() {
-	List.get(Collection)
+function getAllCollections(next) {
+	list.all(CollectionIDList, (err, res) => {
+		if (err) {
+			return next(err);
+		}
+		assert.equal(is.array(res), true);
+		return next(err, res);
+	});
 }
 
 function getCollectionKey(key) {
@@ -81,6 +94,7 @@ function incrementID() {
 
 module.exports = function collection(rawConnection) {
 	connection = rawConnection;
+	list = List(connection);
 	return {
 		get: getCollection,
 		getAllBy: getCollectionsBy,
