@@ -4,6 +4,7 @@ const SearchParam = 'type';
 const QueryLib = require('../util/query');
 const query = QueryLib({
 	type: 'list',
+	id: 1,
 });
 
 
@@ -28,7 +29,6 @@ module.exports = function (lib) {
 					if (err) {
 						return done(err);
 					}
-					console.log(res);
 					return done(err, res);
 				})
 			})

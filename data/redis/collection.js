@@ -7,7 +7,7 @@ let list = {};
 const CollectionIDList = 'CollectionID';
 
 let connection = {};
-let collectionID = 0;
+let collectionID = Math.floor(Math.random() * 10);
 
 // Collection is a list a set or a hash
 /*
@@ -50,7 +50,7 @@ function getCollectionsBy(key, query, next) {
 
 	query.searchCollections((res) => {
 		console.log(res);
-		return done(null, res);
+		return next(null, res);
 	})
 }
 
@@ -63,7 +63,7 @@ function createCollection(key, info, next) {
 
 	info.id = incrementID();
 
-	list.add(CollectionIDList, info.id, (err, res) => {
+	list.add(CollectionIDList, key, (err, res) => {
 		if (err) {
 			return next(err);
 		}
@@ -77,7 +77,20 @@ function getAllCollections(next) {
 			return next(err);
 		}
 		assert.equal(is.array(res), true);
-		return next(err, res);
+		let collections = [];
+		let completed = 0;
+
+		res.forEach((key) => {
+			getCollection(key, (err, collection) => {
+				if (err) {
+					return next(err);
+				}
+				collections.push(collection);
+				if (++completed == res.length) {
+					return next(err, collections);
+				}
+			});
+		});
 	});
 }
 

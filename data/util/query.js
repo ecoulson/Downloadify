@@ -33,15 +33,27 @@ function Query(queryObj) {
 				return next(err);
 			}
 			client.close(client);
-			let matchs = findMatches(res);
+			let matches = findMatches(res);
+			return next(err, matches);
 		});
 	}
 
 	let findMatches = function (collections) {
 		return collections.filter((collection) => {
-			
-		})
+			return compareCollection(collection);
+		});
 	}
+
+	let compareCollection = function (collection) {
+		let equals = true;
+		keys.forEach((key, i) => {
+			if (collection.hasOwnProperty(key) && collection[key] != params[i]) {
+				equals = false;
+			}
+		});
+		return equals;
+	}
+
 
 	deconstructQuery(keys, params);
 
