@@ -175,6 +175,11 @@ function parallelize(task, count, args, next) {
 	}
 }
 
+//returns a refstring that is used to identify a collection in a parameter
+function arrayRef(id, key) {
+	return `redisRef:${id}:${getListKey(key)}`;
+}
+
 module.exports = function list(rawConnection) {
 	connection = rawConnection;
 	return {
@@ -187,5 +192,6 @@ module.exports = function list(rawConnection) {
 		size: getListLength,
 		contains: listContains,
 		all: getList,
+		getRef: arrayRef,
 	};
 }

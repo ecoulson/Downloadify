@@ -52,14 +52,13 @@ function getCollectionsBy(queryObj, next) {
 
 	getAllCollections((collections) => {
 		query.searchCollections(collections, next);
-	})
+	});
 }
 
 function createCollection(key, info, next) {
 	assert.equal(info.key, key);
 	assert.equal(is.function(next), true);
 	assert.equal(is.object(info), true);
-	assert.equal(is.propertyDefined(info, 'type'), true);
 	assert.equal(is.propertyDefined(info, 'key'), true);
 
 	key = getCollectionKey(key);
@@ -68,6 +67,7 @@ function createCollection(key, info, next) {
 	jsonToCollection(info, info.id);
 
 	addKeyToList(key, (exists) => {
+		console.log(exists);
 		if (exists) {
 			return next(false);
 		}
@@ -157,26 +157,43 @@ function getID() {
 function jsonToCollection(json, id) {
 	let flattened = {};
 	for (let key in json) {
-		let val = json[key];
-		if (is.array(val)) {
-			let ref = arrayRef(id, key);
-			flattened[key] = ref;
-			//create ref to list
-			//loop through array
-			//recurse
-		} else if (is.object(val)) {
-			//create ref to collection
-			//iterate through object
-			//recurse
-		} else {
-			flattened[key] = json[key];
-		}
+		let value = handleKey(key, json[key], id);
+		flattened[key] = value;
 	}
-	console.log(flattened);
+	// console.log(flattened);
 	return flattened;
 }
 
-function arrayRef(id, key) {
+function handleKey(key, value, id) {
+	if (is.array(value)) {
+		return handleList(key, value, id);
+	} else if (is.object(value)) {
+		return handleObject(key, value, id);
+	} else {
+		return value;
+	}
+}
+
+function handleList(key, array, id) {
+	let ref = list.getRef(id, key);
+	array.forEach((elem, i) => {
+		list.add(key, handleKey(i, elem, id), (value) => {
+		});
+	});
+	return ref;
+}
+
+function handleObject(key, obj, id) {
+	let ref = collectionRef(id, key);
+	let info = jsonToCollection(obj);
+	info.key = key
+	createCollection(key, info, (success, data) => {
+
+	});
+	return ref;
+}
+
+function collectionRef(id, key) {
 	return `redisRef:${id}:${getCollectionKey(key)}`;
 }
 
