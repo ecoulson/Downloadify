@@ -93,6 +93,8 @@ function getAllCollections(next) {
 
 function deleteCollection(key, next) {
 	key = getCollectionKey(key);
+	assert.equal(is.function(next), true);
+
 	getCollection(key, (collection) => {
 		connection.del(collection.key, (err, res) => {
 			if (err) {
@@ -102,6 +104,23 @@ function deleteCollection(key, next) {
 				return next(res);
 			});
 		});
+	});
+}
+
+function setCollection(key, body, next) {
+	key = getCollectionKey(key);
+	assert.equal(is.object(body), true);
+	assert.equal(is.function(next), true);
+
+	let completed = 0;
+	let length = Object.keys(body).length;
+	connection.hmset(key, body, (err, res) => {
+		if (err) {
+			return console.error(err);
+		}
+		getCollection(key, (collection) => {
+			return next(collection);
+		})
 	});
 }
 
@@ -125,5 +144,6 @@ module.exports = function collection(rawConnection) {
 		getAll: getAllCollections,
 		create: createCollection,
 		delete: deleteCollection,
+		set: setCollection,
 	};
 }

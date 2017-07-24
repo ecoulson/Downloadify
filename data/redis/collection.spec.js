@@ -42,12 +42,21 @@ module.exports = function (lib) {
 			});
 		});
 
+		describe('#setCollection', () => {
+			it(`Should update the collection with a json body`, (done) => {
+				lib.set(CollectionKey, {a: 1}, (collection) => {
+					assert.equal(collection.a, 1);
+					return done(null, collection);
+				})
+			});
+		})
+
 		describe('#deleteCollection', () => {
 			it(`Delete collection with key of ${CollectionKey}`, (done) => {
 				lib.delete(CollectionKey, (res) => {
 					done(null, res);
 				});
-			})
-		})
-	})
+			});
+		});
+	});
 }
