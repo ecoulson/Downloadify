@@ -38,7 +38,15 @@ module.exports = function (lib) {
 						assert.equal(x.type, query.type);
 					});
 					return done(null, res);
-				})
+				});
+			});
+		});
+
+		describe('#deleteCollection', () => {
+			it(`Delete collection with key of ${CollectionKey}`, (done) => {
+				lib.delete(CollectionKey, (res) => {
+					console.log(res);
+				});
 			})
 		})
 	})

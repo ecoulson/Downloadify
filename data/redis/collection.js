@@ -50,12 +50,7 @@ function getCollectionsBy(queryObj, next) {
 	let query = QueryLib(queryObj, module.exports, connection);
 
 	getAllCollections((collections) => {
-		query.searchCollections(collections, (err, matches) => {
-			if (err) {
-				return next(err);
-			}
-			return next(err, matches);
-		})
+		query.searchCollections(collections, next);
 	})
 }
 
@@ -95,6 +90,20 @@ function getAllCollections(next) {
 	});
 }
 
+function deleteCollection(key, next) {
+	key = getCollectionKey(key);
+	getCollection(key, (collection) => {
+		connection.del(collection.key, (err, res) => {
+			if (err) {
+				return console.error(err);
+			}
+			list.removeValue(collection.key, (count) => {
+				return next(res);
+			});
+		});
+	});
+}
+
 function getCollectionKey(key) {
 	if (key.includes('collection')) {
 		return key;
@@ -102,7 +111,7 @@ function getCollectionKey(key) {
 	return `collection:${key}`;
 }
 
-function incrementID() {
+function incrementID(next) {
 	return collectionID++;
 }
 
@@ -114,5 +123,6 @@ module.exports = function collection(rawConnection) {
 		getAllBy: getCollectionsBy,
 		getAll: getAllCollections,
 		create: createCollection,
+		delete: deleteCollection,
 	};
 }
