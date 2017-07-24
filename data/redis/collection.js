@@ -64,6 +64,7 @@ function createCollection(key, info, next) {
 	info.id = incrementID();
 
 	list.add(CollectionIDList, key, (res) => {
+		info.key = getCollectionKey(info.key);
 		connection.hmset(key, info, (err, res) => {
 			if (err) {
 				return console.error(err);
@@ -97,7 +98,7 @@ function deleteCollection(key, next) {
 			if (err) {
 				return console.error(err);
 			}
-			list.removeValue(collection.key, (count) => {
+			list.removeValue(CollectionIDList, collection.key, (count) => {
 				return next(res);
 			});
 		});

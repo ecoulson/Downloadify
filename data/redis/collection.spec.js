@@ -13,7 +13,7 @@ module.exports = function (lib) {
 			it(`Should create a new collection at key ${CollectionKey}`, (done) => {
 				lib.create(CollectionKey, {
 					type: 'list',
-					key: 'list:1',
+					key: CollectionKey,
 				}, (res) => {
 					assert.equal(res, 'OK');
 					return done(null, res);
@@ -45,7 +45,7 @@ module.exports = function (lib) {
 		describe('#deleteCollection', () => {
 			it(`Delete collection with key of ${CollectionKey}`, (done) => {
 				lib.delete(CollectionKey, (res) => {
-					console.log(res);
+					done(null, res);
 				});
 			})
 		})

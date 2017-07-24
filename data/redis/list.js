@@ -63,7 +63,6 @@ function removeListItem(key, next) {
 function removeValue(key, value, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
-
 	connection.lrem(key, 0, value, (err, res) => {
 		if (err) {
 			return console.error(err);
