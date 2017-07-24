@@ -6,7 +6,7 @@ const path = require('path');
 const passport = require('passport');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
-const RouteManager = require('./RouteManager');
+const RouteManager = require('./util/RouteManager');
 
 const config = require('./config');
 

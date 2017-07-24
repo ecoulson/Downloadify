@@ -4,16 +4,22 @@ const SearchParam = 'type';
 const query = {
 	type: 'list',
 };
+const testObj = {
+	type: 'list',
+	key: CollectionKey,
+	a:1,
+	b: {
+		a: 1
+	},
+	c: [1,2,3],
+};
 
 
 module.exports = function (lib) {
 	describe('Collection', () => {
 		describe('#createCollection', () => {
 			it(`Should create a new collection at key ${CollectionKey}`, (done) => {
-				lib.create(CollectionKey, {
-					type: 'list',
-					key: CollectionKey,
-				}, (success, res) => {
+				lib.create(CollectionKey, testObj, (success, res) => {
 					assert.equal(success, true);
 					return done(null, res);
 				});

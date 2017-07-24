@@ -1,6 +1,7 @@
 const assert = require('assert');
 const is = require('is_js');
 const uniqid = require('uniqid');
+const StringBuilder = require('../../util/StringBuilder');
 
 const QueryLib = require('../util/query');
 const List = require('./list');
@@ -63,6 +64,8 @@ function createCollection(key, info, next) {
 
 	key = getCollectionKey(key);
 	info.id = getID();
+
+	jsonToCollection(info, info.id);
 
 	addKeyToList(key, (exists) => {
 		if (exists) {
@@ -149,6 +152,32 @@ function addKeyToList(key, next) {
 
 function getID() {
 	return uniqid();
+}
+
+function jsonToCollection(json, id) {
+	let flattened = {};
+	for (let key in json) {
+		let val = json[key];
+		if (is.array(val)) {
+			let ref = arrayRef(id, key);
+			flattened[key] = ref;
+			//create ref to list
+			//loop through array
+			//recurse
+		} else if (is.object(val)) {
+			//create ref to collection
+			//iterate through object
+			//recurse
+		} else {
+			flattened[key] = json[key];
+		}
+	}
+	console.log(flattened);
+	return flattened;
+}
+
+function arrayRef(id, key) {
+	return `redisRef:${id}:${getCollectionKey(key)}`;
 }
 
 module.exports = function collection(rawConnection) {
