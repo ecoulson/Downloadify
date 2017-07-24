@@ -1,5 +1,6 @@
 const assert = require('assert');
 const is = require('is_js');
+const uniqid = require('uniqid');
 
 const QueryLib = require('../util/query');
 const List = require('./list');
@@ -8,7 +9,6 @@ let list = {};
 const CollectionIDList = 'CollectionID';
 
 let connection = {};
-let collectionID = 0;
 
 // Collection is a list a set or a hash
 /*
@@ -62,7 +62,7 @@ function createCollection(key, info, next) {
 	assert.equal(is.propertyDefined(info, 'key'), true);
 
 	key = getCollectionKey(key);
-	info.id = incrementID();
+	info.id = getID();
 
 	addKeyToList(key, (exists) => {
 		if (exists) {
@@ -147,8 +147,8 @@ function addKeyToList(key, next) {
 	});
 }
 
-function incrementID(next) {
-	return collectionID++;
+function getID() {
+	return uniqid();
 }
 
 module.exports = function collection(rawConnection) {

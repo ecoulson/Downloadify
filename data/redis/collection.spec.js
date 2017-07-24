@@ -3,7 +3,6 @@ const CollectionKey = '0';
 const SearchParam = 'type';
 const query = {
 	type: 'list',
-	id: 0,
 };
 
 
@@ -42,11 +41,10 @@ module.exports = function (lib) {
 		});
 
 		describe('#getCollectionBy', () => {
-			it(`Should get a collection by type of 'list' and id of '1'`, (done) => {
+			it(`Should get a collection by type of 'list'`, (done) => {
 				lib.getAllBy(query, (res) => {
 					assert.notEqual(res.length, 0);
 					res.forEach((x) => {
-						assert.equal(x.id, query.id);
 						assert.equal(x.type, query.type);
 					});
 					return done(null, res);
