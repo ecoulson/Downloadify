@@ -5,7 +5,7 @@ let connection = {};
 
 // add a new element to a list at a given key. If the list does not exist,
 // one is created and the element is added on. Passes the new
-// length of the list to the callback
+// item to the callback
 function addListItem(key, item, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
@@ -14,7 +14,7 @@ function addListItem(key, item, next) {
 		if (err) {
 			return console.error(err);
 		}
-		return next(res);
+		return next(item);
 	});
 }
 
@@ -72,7 +72,7 @@ function removeValue(key, value, next) {
 }
 
 // sets an item at the index with the passed item. Passes
-// a database reply to the callback
+// the new value to the callback
 function setListItem(key, index, item, next) {
 	key = getListKey(key);
 	assert.equal(is.number(index), true);
@@ -84,7 +84,7 @@ function setListItem(key, index, item, next) {
 			if (err) {
 				return console.error(err);
 			}
-			return next(res);
+			return next(item);
 		});
 	});
 }
@@ -115,6 +115,20 @@ function clearList(key, next) {
 			return next(...args);
 		});
 	})
+}
+
+// checks if an item is contained within a list at the given key. Whether the
+// value exists is passed to the callback
+function listContains(key, item, next) {
+	let contains = false;
+	getList(key, (list) => {
+		list.forEach((x) => {
+			if (x == item) {
+				contains = true;
+			}
+		});
+		return next(contains);
+	});
 }
 
 //changes the basic key value to a list key
@@ -171,6 +185,7 @@ module.exports = function list(rawConnection) {
 		removeValue: removeValue,
 		clear: clearList,
 		size: getListLength,
+		contains: listContains,
 		all: getList,
 	};
 }

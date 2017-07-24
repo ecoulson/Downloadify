@@ -55,22 +55,26 @@ function getCollectionsBy(queryObj, next) {
 }
 
 function createCollection(key, info, next) {
-	key = getCollectionKey(key);
+	assert.equal(info.key, key);
 	assert.equal(is.function(next), true);
 	assert.equal(is.object(info), true);
 	assert.equal(is.propertyDefined(info, 'type'), true);
 	assert.equal(is.propertyDefined(info, 'key'), true);
 
+	key = getCollectionKey(key);
 	info.id = incrementID();
 
-	list.add(CollectionIDList, key, (res) => {
+	addKeyToList(key, (exists) => {
+		if (exists) {
+			return next(false);
+		}
 		info.key = getCollectionKey(info.key);
 		connection.hmset(key, info, (err, res) => {
 			if (err) {
 				return console.error(err);
 			}
 			assert.equal(is.object(info), true);
-			return next(info);
+			return next(true, info);
 		});
 	});
 }
@@ -130,6 +134,17 @@ function getCollectionKey(key) {
 		return key;
 	}
 	return `collection:${key}`;
+}
+
+function addKeyToList(key, next) {
+	list.contains(CollectionIDList, key, (exists) => {
+		if (exists) {
+			return next(exists);
+		}
+		list.add(CollectionIDList, key, (res) => {
+			return next(exists);
+		});
+	});
 }
 
 function incrementID(next) {

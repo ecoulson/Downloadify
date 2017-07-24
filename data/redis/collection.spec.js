@@ -14,11 +14,24 @@ module.exports = function (lib) {
 				lib.create(CollectionKey, {
 					type: 'list',
 					key: CollectionKey,
-				}, (res) => {
+				}, (success, res) => {
+					assert.equal(success, true);
 					return done(null, res);
 				});
 			});
 		});
+
+		describe('#createCollection fail', () => {
+			it(`Should return false at key ${CollectionKey} as it already exists`, (done) => {
+				lib.create(CollectionKey, {
+					type: 'list',
+					key: CollectionKey,
+				}, (success, res) => {
+					assert.equal(success, false);
+					return done(null, res);
+				});
+			});
+		})
 
 		describe('#getCollection', () => {
 			it(`Should get a collection at this key ${CollectionKey}`, (done) => {
@@ -46,9 +59,9 @@ module.exports = function (lib) {
 				lib.update(CollectionKey, {a: 1}, (collection) => {
 					assert.equal(collection.a, 1);
 					return done(null, collection);
-				})
+				});
 			});
-		})
+		});
 
 		describe('#deleteCollection', () => {
 			it(`Delete collection with key of ${CollectionKey}`, (done) => {

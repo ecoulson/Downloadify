@@ -23,7 +23,7 @@ module.exports = function (lib) {
 		describe('#add', () => {
 			it('Should add an element called "test" to a list', (done) => {
 				lib.add(ListTestKey, ListAddItem, (res) => {
-					assert.equal(res, '1');
+					assert.equal(res, 'test');
 					return done(null, res);
 				});
 			});
@@ -40,11 +40,9 @@ module.exports = function (lib) {
 
 		describe('#set', () => {
 			it(`Should set element at the 0 index to "${ListSetItem}"`, (done) => {
-				lib.set(ListTestKey, 0, ListSetItem, (err) => {
-					lib.get(ListTestKey, 0, (res) => {
-						assert.equal(res, ListSetItem);
-						return done(null, res);
-					})
+				lib.set(ListTestKey, 0, ListSetItem, (res) => {
+					assert.equal(res, ListSetItem);
+					return done(null, res);
 				})
 			})
 		});
@@ -87,9 +85,20 @@ module.exports = function (lib) {
 					assert.equal(is.array(res), true);
 					assert.equal(res.length, FakeDataSize);
 					return done(null, res)
-				})
-			})
-		})
+				});
+			});
+		});
+
+		describe('#contains', () => {
+			it('Should return that the list contains the value dog', (done) => {
+				lib.add(ListTestKey, 'dog', (res) => {
+					lib.contains(ListTestKey, 'dog', (res) => {
+						assert.equal(res, true);
+						return done(null, res);
+					});
+				});
+			});
+		});
 
 		describe('#clear', () => {
 			it('Should clear the list of all data values', (done) => {
@@ -99,7 +108,7 @@ module.exports = function (lib) {
 						return done(null, res);
 					});
 				});
-			})
-		})
+			});
+		});
 	});
 };
