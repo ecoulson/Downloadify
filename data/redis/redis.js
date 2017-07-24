@@ -4,7 +4,7 @@ let connection = {};
 
 function closeConnection(client) {
 	if (client.hasOwnProperty('connection')) {
-		client.connection.end();
+		client.connection.end(true);
 	}
 }
 
