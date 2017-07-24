@@ -1,11 +1,10 @@
 const assert = require('assert');
 const CollectionKey = '0';
 const SearchParam = 'type';
-const QueryLib = require('../util/query');
-const query = QueryLib({
+const query = {
 	type: 'list',
-	id: 1,
-});
+	id: 0,
+};
 
 
 module.exports = function (lib) {
@@ -15,21 +14,30 @@ module.exports = function (lib) {
 				lib.create(CollectionKey, {
 					type: 'list',
 					key: 'list:1',
-				}, done);
-			})
-		})
+				}, (res) => {
+					assert.equal(res, 'OK');
+					return done(null, res);
+				});
+			});
+		});
+
 		describe('#getCollection', () => {
 			it(`Should get a collection at this key ${CollectionKey}`, (done) => {
-				lib.get(CollectionKey, done);
-			})
+				lib.get(CollectionKey, (collection) => {
+					return done(null, collection);
+				});
+			});
 		});
+
 		describe('#getCollectionBy', () => {
-			it(`Should get a collection by type of 'list'`, (done) => {
-				lib.getAllBy(CollectionKey, query, (err, res) => {
-					if (err) {
-						return done(err);
-					}
-					return done(err, res);
+			it(`Should get a collection by type of 'list' and id of '1'`, (done) => {
+				lib.getAllBy(query, (res) => {
+					assert.notEqual(res.length, 0);
+					res.forEach((x) => {
+						assert.equal(x.id, query.id);
+						assert.equal(x.type, query.type);
+					});
+					return done(null, res);
 				})
 			})
 		})

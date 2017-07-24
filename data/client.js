@@ -1,4 +1,4 @@
-const redisWrapper = require('./redis');
+const redisWrapper = require('./redis/redis');
 const redis = require('redis');
 let client = {};
 
@@ -20,4 +20,4 @@ module.exports = {
 	create: createClient,
 	get: getClient,
 	close: closeClient,
-}
+};

@@ -1,5 +1,5 @@
-const ListTests = require('./redis/list.spec');
-const CollectionTests = require('./redis/collection.spec');
+const ListTests = require('./list.spec');
+const CollectionTests = require('./collection.spec');
 
 module.exports = function (lib) {
 	describe('Redis', () => {

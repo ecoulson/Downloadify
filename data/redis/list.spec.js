@@ -10,13 +10,10 @@ module.exports = function (lib) {
 	function generateFakeData(count, fakeData, next) {
 		let completed = 0;
 		for (let i = 0; i < count; i++) {
-			lib.add(ListTestKey, fakeData, (err, res) => {
-				if (err) {
-					return next(err);
-				}
+			lib.add(ListTestKey, fakeData, () => {
 				completed++;
 				if (completed === count) {
-					return next(null);
+					return next();
 				}
 			});
 		}
@@ -25,10 +22,7 @@ module.exports = function (lib) {
 	describe('List', () => {
 		describe('#add', () => {
 			it('Should add an element called "test" to a list', (done) => {
-				lib.add(ListTestKey, ListAddItem, (err, res) => {
-					if (err) {
-						return done(err);
-					}
+				lib.add(ListTestKey, ListAddItem, (res) => {
 					assert.equal(res, '1');
 					return done(null, res);
 				});
@@ -37,10 +31,7 @@ module.exports = function (lib) {
 
 		describe('#get', () => {
 			it(`Should get an element "${ListAddItem}" at index 0`, (done) => {
-				lib.get(ListTestKey, 0, (err, res) => {
-					if (err) {
-						return done(err);
-					}
+				lib.get(ListTestKey, 0, (res) => {
 					assert.equal(res, ListAddItem);
 					return done(null, res);
 				});
@@ -50,13 +41,7 @@ module.exports = function (lib) {
 		describe('#set', () => {
 			it(`Should set element at the 0 index to "${ListSetItem}"`, (done) => {
 				lib.set(ListTestKey, 0, ListSetItem, (err) => {
-					if (err) {
-						return done(err);
-					}
-					lib.get(ListTestKey, 0, (err, res) => {
-						if (err) {
-							return done(err);
-						}
+					lib.get(ListTestKey, 0, (res) => {
 						assert.equal(res, ListSetItem);
 						return done(null, res);
 					})
@@ -66,10 +51,7 @@ module.exports = function (lib) {
 
 		describe('#remove', () => {
 			it(`Should remove the last element in the list and return it`, (done) => {
-				lib.remove(ListTestKey, (err, res) => {
-					if (err) {
-						return done(err);
-					}
+				lib.remove(ListTestKey, (res) => {
 					assert.equal(res, ListSetItem);
 					return done(null, res);
 				});
@@ -78,14 +60,8 @@ module.exports = function (lib) {
 
 		describe('#length', () => {
 			it(`Should return ${FakeDataSize}, which is the size of the list`, (done) => {
-				generateFakeData(FakeDataSize, ListAddItem, (err) => {
-					if (err) {
-						return done(err);
-					}
-					lib.size(ListTestKey, (err, res) => {
-						if (err) {
-							return done(err);
-						}
+				generateFakeData(FakeDataSize, ListAddItem, () => {
+					lib.size(ListTestKey, (res) => {
 						assert.equal(res, FakeDataSize);
 						return done(null, res);
 					});
@@ -96,16 +72,10 @@ module.exports = function (lib) {
 		describe('#removeValue', () => {
 			const fakeValue = 'removable';
 			it(`Should remove all of ${fakeValue}`, (done) => {
-				generateFakeData(FakeDataSize, fakeValue, (err) => {
-					if (err) {
-						return done(err);
-					}
-					lib.removeValue(ListTestKey, fakeValue, (err, res) => {
-						if (err) {
-							return done(err);
-						}
+				generateFakeData(FakeDataSize, fakeValue, () => {
+					lib.removeValue(ListTestKey, fakeValue, (res) => {
 						assert(res, FakeDataSize);
-						return done(err, res);
+						return done(null, res);
 					});
 				});
 			});
@@ -113,29 +83,20 @@ module.exports = function (lib) {
 
 		describe('#all', () => {
 			it(`Should get all elements from list`, (done) => {
-				lib.all(ListTestKey, (err, res) => {	
-					if (err) {
-						return done(err);
-					}
+				lib.all(ListTestKey, (res) => {
 					assert.equal(is.array(res), true);
 					assert.equal(res.length, FakeDataSize);
-					return done(err, res)
+					return done(null, res)
 				})
 			})
 		})
 
 		describe('#clear', () => {
 			it('Should clear the list of all data values', (done) => {
-				lib.clear(ListTestKey, (err) => {
-					if (err) {
-						return done(err);
-					}
-					lib.size(ListTestKey, (err, res) => {
-						if (err) {
-							return done(err);
-						}
+				lib.clear(ListTestKey, (x) => {
+					lib.size(ListTestKey, (res) => {
 						assert.equal(res, 0);
-						return done(err, res);
+						return done(null, res);
 					});
 				});
 			})

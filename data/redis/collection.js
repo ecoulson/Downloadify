@@ -1,13 +1,14 @@
 const assert = require('assert');
 const is = require('is_js');
 
+const QueryLib = require('../util/query');
 const List = require('./list');
 let list = {};
 
 const CollectionIDList = 'CollectionID';
 
 let connection = {};
-let collectionID = Math.floor(Math.random() * 10);
+let collectionID = 0;
 
 // Collection is a list a set or a hash
 /*
@@ -33,24 +34,28 @@ let collectionID = Math.floor(Math.random() * 10);
 function getCollection(key, next) {
 	key = getCollectionKey(key);
 	assert.equal(is.function(next), true);
-
 	connection.hgetall(key, (err, collection) => {
 		if (err) {
-			return next(err);
+			return console.error(err);
 		}
 		assert.equal(is.object(collection), true);
-		return next(err, collection);
+		return next(collection);
 	});
 }
 
 
-function getCollectionsBy(key, query, next) {
-	key = getCollectionKey(key);
+function getCollectionsBy(queryObj, next) {
 	assert.equal(is.function(next), true);
 
-	query.searchCollections((res) => {
-		console.log(res);
-		return next(null, res);
+	let query = QueryLib(queryObj, module.exports, connection);
+
+	getAllCollections((collections) => {
+		query.searchCollections(collections, (err, matches) => {
+			if (err) {
+				return next(err);
+			}
+			return next(err, matches);
+		})
 	})
 }
 
@@ -63,31 +68,27 @@ function createCollection(key, info, next) {
 
 	info.id = incrementID();
 
-	list.add(CollectionIDList, key, (err, res) => {
-		if (err) {
-			return next(err);
-		}
-		connection.hmset(key, info, next);
+	list.add(CollectionIDList, key, (res) => {
+		connection.hmset(key, info, (err, res) => {
+			if (err) {
+				return console.error(err);
+			}
+			return next(res);
+		});
 	});
 }
 
 function getAllCollections(next) {
-	list.all(CollectionIDList, (err, res) => {
-		if (err) {
-			return next(err);
-		}
+	list.all(CollectionIDList, (res) => {
 		assert.equal(is.array(res), true);
 		let collections = [];
 		let completed = 0;
 
 		res.forEach((key) => {
-			getCollection(key, (err, collection) => {
-				if (err) {
-					return next(err);
-				}
+			getCollection(key, (collection) => {
 				collections.push(collection);
 				if (++completed == res.length) {
-					return next(err, collections);
+					return next(collections);
 				}
 			});
 		});
@@ -102,7 +103,7 @@ function getCollectionKey(key) {
 }
 
 function incrementID() {
-	return ++collectionID;
+	return collectionID++;
 }
 
 module.exports = function collection(rawConnection) {

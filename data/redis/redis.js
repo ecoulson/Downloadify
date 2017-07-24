@@ -1,5 +1,5 @@
-const RedisListWrapper = require('./redis/list');
-const RedisCollectionWrapper = require('./redis/collection');
+const RedisListWrapper = require('./list');
+const RedisCollectionWrapper = require('./collection');
 let connection = {};
 
 function closeConnection(client) {

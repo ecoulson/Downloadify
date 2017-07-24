@@ -1,5 +1,3 @@
-const Client = require('../client');
-
 const assert = require('assert');
 const is = require('is_js');
 
@@ -9,6 +7,7 @@ function Query(queryObj) {
 	let query = queryObj;
 	let keys = [];
 	let params = [];
+
 
 	let deconstructQuery = function(keys, params) {
 		for (var k in query) {
@@ -26,16 +25,9 @@ function Query(queryObj) {
 		return keys;
 	}
 
-	let searchCollections = function (next) {
-		let client = Client.create();
-		client.Collection.getAll((err, res) => {
-			if (err) {
-				return next(err);
-			}
-			client.close(client);
-			let matches = findMatches(res);
-			return next(err, matches);
-		});
+	let searchCollections = function (collections, next) {
+		let matches = findMatches(collections);
+		return next(matches);
 	}
 
 	let findMatches = function (collections) {
