@@ -15,7 +15,6 @@ module.exports = function (lib) {
 					type: 'list',
 					key: CollectionKey,
 				}, (res) => {
-					assert.equal(res, 'OK');
 					return done(null, res);
 				});
 			});
@@ -44,7 +43,7 @@ module.exports = function (lib) {
 
 		describe('#setCollection', () => {
 			it(`Should update the collection with a json body`, (done) => {
-				lib.set(CollectionKey, {a: 1}, (collection) => {
+				lib.update(CollectionKey, {a: 1}, (collection) => {
 					assert.equal(collection.a, 1);
 					return done(null, collection);
 				})

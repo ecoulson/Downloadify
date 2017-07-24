@@ -69,7 +69,8 @@ function createCollection(key, info, next) {
 			if (err) {
 				return console.error(err);
 			}
-			return next(res);
+			assert.equal(is.object(info), true);
+			return next(info);
 		});
 	});
 }
@@ -144,6 +145,6 @@ module.exports = function collection(rawConnection) {
 		getAll: getAllCollections,
 		create: createCollection,
 		delete: deleteCollection,
-		set: setCollection,
+		update: setCollection,
 	};
 }
