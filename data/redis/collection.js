@@ -48,7 +48,7 @@ function getCollection(key, next) {
 function getCollectionsBy(queryObj, next) {
 	assert.equal(is.function(next), true);
 
-	let query = QueryLib(queryObj, module.exports, connection);
+	let query = QueryLib(queryObj);
 
 	getAllCollections((collections) => {
 		query.searchCollections(collections, next);
@@ -64,10 +64,9 @@ function createCollection(key, info, next) {
 	key = getCollectionKey(key);
 	info.id = getID();
 
-	jsonToCollection(info, info.id);
+	info = jsonToCollection(info, info.id);
 
 	addKeyToList(key, (exists) => {
-		console.log(exists);
 		if (exists) {
 			return next(false);
 		}
@@ -186,7 +185,7 @@ function handleList(key, array, id) {
 function handleObject(key, obj, id) {
 	let ref = collectionRef(id, key);
 	let info = jsonToCollection(obj);
-	info.key = key
+	info.key = key;
 	createCollection(key, info, (success, data) => {
 
 	});

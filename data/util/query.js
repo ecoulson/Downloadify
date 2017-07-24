@@ -37,13 +37,27 @@ function Query(queryObj) {
 	}
 
 	let compareCollection = function (collection) {
+		return checkPropertyCount(collection) && checkValues(collection);
+	}
+
+	function checkPropertyCount(collection) {
+		let properties = 0;
+		keys.forEach((key) => {
+			if (collection.hasOwnProperty(key)) {
+				properties++;
+			}
+		});
+		return properties > 0;
+	}
+
+	function checkValues(collection) {
 		let equals = true;
 		keys.forEach((key, i) => {
 			if (collection.hasOwnProperty(key) && collection[key] != params[i]) {
 				equals = false;
 			}
 		});
-		return equals;
+		return equals
 	}
 
 
