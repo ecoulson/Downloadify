@@ -89,6 +89,18 @@ function setListItem(key, index, item, next) {
 	});
 }
 
+// deletes the list at the passed key. Passes the deleted list to the callback
+function deleteList(key, next) {
+	getList(key, (list) => {
+		connection.del(key, (err, res) => {
+			if (err) {
+				return console.error(err);
+			}
+			return next(list);
+		})
+	})
+}
+
 // passes the length of the list to a callback
 function getListLength(key, next) {
 	key = getListKey(key);
@@ -175,11 +187,6 @@ function parallelize(task, count, args, next) {
 	}
 }
 
-//returns a refstring that is used to identify a collection in a parameter
-function arrayRef(id, key) {
-	return `redisRef:${id}:${getListKey(key)}`;
-}
-
 module.exports = function list(rawConnection) {
 	connection = rawConnection;
 	return {
@@ -188,10 +195,11 @@ module.exports = function list(rawConnection) {
 		set: setListItem,
 		remove: removeListItem,
 		removeValue: removeValue,
+		delete: deleteList,
 		clear: clearList,
 		size: getListLength,
 		contains: listContains,
 		all: getList,
-		getRef: arrayRef,
+		getKey: getListKey,
 	};
 }

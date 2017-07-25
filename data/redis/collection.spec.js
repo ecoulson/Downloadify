@@ -7,11 +7,11 @@ const query = {
 const testObj = {
 	type: 'list',
 	key: CollectionKey,
-	a:1,
-	b: {
-		a: 1
+	a: 1,
+	b: [1,2],
+	c: {
+		a:1,
 	},
-	c: [1,2,3],
 };
 
 

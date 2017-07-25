@@ -64,7 +64,7 @@ function createCollection(key, info, next) {
 	key = getCollectionKey(key);
 	info.id = getID();
 
-	info = jsonToCollection(info, info.id);
+	info = jsonToCollection(info, info.id, getCollectionKey(key));
 
 	addKeyToList(key, (exists) => {
 		if (exists) {
@@ -103,15 +103,35 @@ function deleteCollection(key, next) {
 	assert.equal(is.function(next), true);
 
 	getCollection(key, (collection) => {
+		deleteReferences(collection);
 		connection.del(collection.key, (err, res) => {
 			if (err) {
 				return console.error(err);
 			}
 			list.removeValue(CollectionIDList, collection.key, (count) => {
-				return next(res);
+				return next(collection);
 			});
 		});
 	});
+}
+
+function deleteReferences(collection) {
+	for (var key in collection) {
+		if (collection[key].includes('redisRef:///')) {
+			let redisKey = collection[key].split('redisRef:///')[1];
+			let parts = redisKey.split('/');
+			let type = parts[parts.length - 1].split(':')[0];
+			if (type == 'list') {
+				list.delete(redisKey, (array) => {
+					deleteReferences(array);
+				});
+			} else {
+				deleteCollection(redisKey, (collection) => {
+					deleteReferences(collection);
+				})
+			}
+		}
+	}
 }
 
 function setCollection(key, body, next) {
@@ -132,6 +152,7 @@ function setCollection(key, body, next) {
 }
 
 function getCollectionKey(key) {
+	key += '';
 	if (key.includes('collection')) {
 		return key;
 	}
@@ -153,47 +174,48 @@ function getID() {
 	return uniqid();
 }
 
-function jsonToCollection(json, id) {
+function jsonToCollection(json, id, path) {
 	let flattened = {};
 	for (let key in json) {
-		let value = handleKey(key, json[key], id);
+		let value = handleKey(key, json[key], id, path);
 		flattened[key] = value;
 	}
-	// console.log(flattened);
 	return flattened;
 }
 
-function handleKey(key, value, id) {
+function handleKey(key, value, id, path) {
 	if (is.array(value)) {
-		return handleList(key, value, id);
+		return handleList(key, value, id, path);
 	} else if (is.object(value)) {
-		return handleObject(key, value, id);
+		return handleObject(key, value, id, path);
 	} else {
 		return value;
 	}
 }
 
-function handleList(key, array, id) {
-	let ref = list.getRef(id, key);
+function handleList(key, array, id, path) {
+	path = `${path}/${list.getKey(key)}`;
+	let ref = collectionRef(id, key, path);
 	array.forEach((elem, i) => {
-		list.add(key, handleKey(i, elem, id), (value) => {
+		list.add(path, handleKey(i, elem, id, path), (value) => {
 		});
 	});
 	return ref;
 }
 
-function handleObject(key, obj, id) {
-	let ref = collectionRef(id, key);
-	let info = jsonToCollection(obj);
-	info.key = key;
-	createCollection(key, info, (success, data) => {
+function handleObject(key, obj, id, path) {
+	path = `${path}/${getCollectionKey(key)}`;
+	let ref = collectionRef(id, key, path);
+	let info = jsonToCollection(obj, id, path);
+	info.key = path;
+	createCollection(path, info, (success, data) => {
 
 	});
 	return ref;
 }
 
-function collectionRef(id, key) {
-	return `redisRef:${id}:${getCollectionKey(key)}`;
+function collectionRef(id, key, path) {
+	return `redisRef:///${path}`;
 }
 
 module.exports = function collection(rawConnection) {
