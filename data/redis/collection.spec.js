@@ -6,9 +6,10 @@ const query = {
 };
 const testObj = {
 	type: 'list',
-	key: CollectionKey,
 	a: 1,
-	b: [1,2],
+	b: [1,2, {
+		c: 3,
+	}],
 	c: {
 		a:1,
 	},
@@ -30,7 +31,6 @@ module.exports = function (lib) {
 			it(`Should return false at key ${CollectionKey} as it already exists`, (done) => {
 				lib.create(CollectionKey, {
 					type: 'list',
-					key: CollectionKey,
 				}, (success, res) => {
 					assert.equal(success, false);
 					return done(null, res);
@@ -41,6 +41,7 @@ module.exports = function (lib) {
 		describe('#getCollection', () => {
 			it(`Should get a collection at this key ${CollectionKey}`, (done) => {
 				lib.get(CollectionKey, (collection) => {
+					console.log(collection);
 					return done(null, collection);
 				});
 			});

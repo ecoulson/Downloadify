@@ -11,25 +11,6 @@ const CollectionIDList = 'CollectionID';
 
 let connection = {};
 
-// Collection is a list a set or a hash
-/*
-
-{
-	id: 01f783fa
-	type: "list",
-	key: keyValue,
-}
-
-{
-	name: "bob",
-	age: 15,
-	siblings: [] -> Collection,
-}
-
-[{},{}] -> [collectionID, collectionID]
-
-*/
-
 // takes in a key and a callback, passes an error and the resulting
 // collection to the callback
 function getCollection(key, next) {
@@ -40,8 +21,79 @@ function getCollection(key, next) {
 			return console.error(err);
 		}
 		assert.equal(is.object(collection), true);
+		getReferences(collection, (data) => {
+			return next(data);
+		});
+	});
+}
+
+function getCollectionWithReferences(key, next) {
+	key = getCollectionKey(key);
+	assert.equal(is.function(next), true);
+	connection.hgetall(key, (err, collection) => {
+		if (err) {
+			return console.error(err);
+		}
+		assert.equal(is.object(collection), true);
 		return next(collection);
 	});
+}
+
+function getReferences(collection, done) {
+	const tasks = [];
+
+	for (var k in collection) {
+		if (is.string(collection[k]) && collection[k].includes('redisRef:///')) {
+			let {type, redisKey} = getKeyObj(collection[k]);
+			if (type == 'list') {
+				let key = k;
+				tasks.push((next) => {
+					dereferenceArray(redisKey, key, collection, next);
+				});
+			} else {
+				let key = k;
+				tasks.push((next) => {
+					dereferenceHash(redisKey, key, collection, next);
+				});
+			}
+		}
+	}
+
+	executeTasks(tasks, collection, (res) => {
+		return done(res);
+	});
+}
+
+function dereferenceHash(redisKey, key, collection, next) {
+	getCollection(redisKey, (hash) => {
+		getReferences(hash, (dereferencedHash) => {
+			collection[key] = dereferencedHash;
+			return next();
+		});
+	});
+}
+
+function dereferenceArray(redisKey, key, collection, next) {
+	list.all(redisKey, (array) => {
+		getReferences(array, (dereferencedArray) => {
+			collection[key] = dereferencedArray;
+			return next();
+		});
+	});
+}
+
+function executeTasks(tasks, collection, done) {
+	let completed = 0;
+	if (tasks.length == 0) {
+		return done(collection);
+	}
+	tasks.forEach((task) => {
+		task(() => {
+			if (++completed == tasks.length) {
+				return done(collection);
+			}
+		})
+	})
 }
 
 
@@ -56,13 +108,12 @@ function getCollectionsBy(queryObj, next) {
 }
 
 function createCollection(key, info, next) {
-	assert.equal(info.key, key);
 	assert.equal(is.function(next), true);
 	assert.equal(is.object(info), true);
-	assert.equal(is.propertyDefined(info, 'key'), true);
 
 	key = getCollectionKey(key);
-	info.id = getID();
+	info._key = key;
+	info._id = getID();
 
 	info = jsonToCollection(info, info.id, getCollectionKey(key));
 
@@ -70,7 +121,7 @@ function createCollection(key, info, next) {
 		if (exists) {
 			return next(false);
 		}
-		info.key = getCollectionKey(info.key);
+		info._key = getCollectionKey(info._key);
 		connection.hmset(key, info, (err, res) => {
 			if (err) {
 				return console.error(err);
@@ -102,13 +153,13 @@ function deleteCollection(key, next) {
 	key = getCollectionKey(key);
 	assert.equal(is.function(next), true);
 
-	getCollection(key, (collection) => {
+	getCollectionWithReferences(key, (collection) => {
 		deleteReferences(collection);
-		connection.del(collection.key, (err, res) => {
+		connection.del(collection._key, (err, res) => {
 			if (err) {
 				return console.error(err);
 			}
-			list.removeValue(CollectionIDList, collection.key, (count) => {
+			list.removeValue(CollectionIDList, collection._key, (count) => {
 				return next(collection);
 			});
 		});
@@ -117,10 +168,8 @@ function deleteCollection(key, next) {
 
 function deleteReferences(collection) {
 	for (var key in collection) {
-		if (collection[key].includes('redisRef:///')) {
-			let redisKey = collection[key].split('redisRef:///')[1];
-			let parts = redisKey.split('/');
-			let type = parts[parts.length - 1].split(':')[0];
+		if (is.string(collection[key]) && collection[key].includes('redisRef:///')) {
+			let {type, redisKey} = getKeyObj(collection[key]);
 			if (type == 'list') {
 				list.delete(redisKey, (array) => {
 					deleteReferences(array);
@@ -207,11 +256,21 @@ function handleObject(key, obj, id, path) {
 	path = `${path}/${getCollectionKey(key)}`;
 	let ref = collectionRef(id, key, path);
 	let info = jsonToCollection(obj, id, path);
-	info.key = path;
+	info._key = path;
 	createCollection(path, info, (success, data) => {
 
 	});
 	return ref;
+}
+
+function getKeyObj(value) {
+	let redisKey = value.split('redisRef:///')[1];
+	let parts = redisKey.split('/');
+	let type = parts[parts.length - 1].split(':')[0];
+	return {
+		type: type,
+		redisKey: redisKey,
+	};
 }
 
 function collectionRef(id, key, path) {
