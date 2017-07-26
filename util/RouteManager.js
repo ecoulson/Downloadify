@@ -31,7 +31,7 @@ function RouteManager(app, config, dir) {
 
 	let expandFileNames = function(files) {
 		return files.map((file) => {
-			return `./${path.join(dir, file)}`;
+			return `../${path.join(dir, file)}`;
 		});
 	}
 
