@@ -3,7 +3,7 @@ const CollectionKey = '0';
 const SearchParam = 'type';
 const query = {
 	type: 'list',
-	b: [1, 2, 2, 1],
+	b: [1, 2],
 	c: {
 		a: 'dog',
 	},
@@ -11,7 +11,7 @@ const query = {
 const testObj = {
 	type: 'list',
 	a: 1,
-	b: [1,2],
+	b: [1, 2],
 	c: {
 		a:1,
 	},
