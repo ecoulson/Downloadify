@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const passport = require('passport');
+const User = require('../data/user');
 const LocalStrategy = require('passport-local').Strategy;
 
 const user = {
@@ -31,6 +32,10 @@ router.post('/login',
     res.send('test');
   }
 );
+
+router.post('/user', (req, res, next) => {
+	// User.addUserID()
+})
 
 function findUser(username, next) {
 	if (username != user.username) {
