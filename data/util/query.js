@@ -1,71 +1,61 @@
 const assert = require('assert');
 const is = require('is_js');
 
-function Query(queryObj) {
-	assert.equal(is.object(queryObj), true);
+function Query(query) {
+	assert.equal(is.object(query), true);
 
-	let query = queryObj;
-	let keys = [];
-	let params = [];
-
-
-	let deconstructQuery = function(keys, params) {
-		for (var k in query) {
-			keys.push(k);
-			params.push(query[k]);
-		}
-		assert.equal(keys.length, params.length);
-	}
-
-	let getParams = function () {
-		return params;
-	}
-
-	let getKeys = function () {
-		return keys;
-	}
-
-	let searchCollections = function (collections, next) {
+	function searchCollections(collections, next) {
 		let matches = findMatches(collections);
 		return next(matches);
 	}
 
-	let findMatches = function (collections) {
+	function findMatches(collections) {
 		return collections.filter((collection) => {
-			return compareCollection(collection);
+			return compareCollection(collection, query);
 		});
 	}
 
-	let compareCollection = function (collection) {
-		return checkPropertyCount(collection) && checkValues(collection);
-	}
-
-	function checkPropertyCount(collection) {
-		let properties = 0;
-		keys.forEach((key) => {
+	function compareCollection(collection, query) {
+		let equal = true;
+		let hasProp = false;
+		for (var key in query) {
 			if (collection.hasOwnProperty(key)) {
-				properties++;
+				hasProp = true;
+				if (is.sameType(collection[key], query[key]) || collection[key] == query[key]) {
+					if (is.array(collection[key])) {
+						if (!compareArray(collection[key], query[key])) {
+							return false;
+						}
+					} else if (is.object(collection[key])) {
+						if (!compareCollection(collection[key], query[key])) {
+							return false;
+						}
+					} else {
+						if (collection[key] != query[key]) {
+							return false;
+						}
+					}
+				} else {
+					return false;
+				}
 			}
-		});
-		return properties > 0;
+		}
+		return equal && hasProp;
 	}
 
-	function checkValues(collection) {
-		let equals = true;
-		keys.forEach((key, i) => {
-			if (collection.hasOwnProperty(key) && collection[key] != params[i]) {
-				equals = false;
+	function compareArray(a1, a2) {
+		if (a1.length != a2.length) {
+			return false;
+		}
+		for (let i = 0; i < a1.length; i++) {
+			if (a1[i] != a2[i]) {
+				return false;
 			}
-		});
-		return equals
+		}
+		return true;
 	}
-
-
-	deconstructQuery(keys, params);
 
 	return {
-		getParams: getParams,
-		getKeys: getKeys,
 		searchCollections: searchCollections
 	};
 }

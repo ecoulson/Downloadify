@@ -188,16 +188,46 @@ function setCollection(key, body, next) {
 	assert.equal(is.object(body), true);
 	assert.equal(is.function(next), true);
 
-	let completed = 0;
-	let length = Object.keys(body).length;
-	connection.hmset(key, body, (err, res) => {
-		if (err) {
-			return console.error(err);
-		}
-		getCollection(key, (collection) => {
-			return next(collection);
-		})
+	getCollection(key, (collection) => {
+		let updatedCollection = combineObjects(collection, body);
+		setReferences(updatedCollection, updatedCollection._key);
+		return next(collection);
 	});
+}
+
+function setReferences(json) {
+	for (let k in json) {
+		if (is.array(json[k])) {
+			let ref = `${json._key}/${list.getKey(k)}`;
+			json[k].forEach((elem) => {
+				list.add(ref, elem, () => {});
+			});
+			setReferences(json[k]);
+			json[k] = ref;
+		} else if (is.object(json[k])) {
+			let ref = json[k]._key;
+			connection.hmset(ref, json[k], () => {});
+			setReferences(json[k]);
+			json[k] = collectionRef(ref);
+		}
+	}
+}
+
+function setList(array, path, key) {
+	setReferences(array);
+	return collectionRef(`${path}/${list.getKey(key)}`);
+}
+
+function combineObjects(collection, body) {
+	for (var k in collection) {
+		if (body.hasOwnProperty(k)) {
+			if (is.object(collection[k])) {
+				body[k] = combineObjects(collection[k], body[k]);
+			}
+			collection[k] = body[k];
+		}
+	}
+	return collection;
 }
 
 function getCollectionKey(key) {
@@ -244,22 +274,19 @@ function handleKey(key, value, id, path) {
 
 function handleList(key, array, id, path) {
 	path = `${path}/${list.getKey(key)}`;
-	let ref = collectionRef(id, key, path);
+	let ref = collectionRef(path);
 	array.forEach((elem, i) => {
-		list.add(path, handleKey(i, elem, id, path), (value) => {
-		});
+		list.add(path, handleKey(i, elem, id, path), (value) => {});
 	});
 	return ref;
 }
 
 function handleObject(key, obj, id, path) {
 	path = `${path}/${getCollectionKey(key)}`;
-	let ref = collectionRef(id, key, path);
+	let ref = collectionRef(path);
 	let info = jsonToCollection(obj, id, path);
 	info._key = path;
-	createCollection(path, info, (success, data) => {
-
-	});
+	createCollection(path, info, (success, data) => {});
 	return ref;
 }
 
@@ -273,7 +300,7 @@ function getKeyObj(value) {
 	};
 }
 
-function collectionRef(id, key, path) {
+function collectionRef(path) {
 	return `redisRef:///${path}`;
 }
 
