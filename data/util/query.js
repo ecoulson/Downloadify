@@ -63,7 +63,17 @@ function Query(query) {
 			return false;
 		}
 		for (let i = 0; i < a1.length; i++) {
-			if (a1[i] != a2[i]) {
+			if (is.array(a1[i]) && is.array(a2[i])) {
+				let res = compareArray(a1[i], a2[i]);
+				if (!res) {
+					return res;
+				}
+			} else if (is.object(a1[i]) && is.object(a2[i])) {
+				let res = compareCollection(a1[i], a2[i]);
+				if (!res) {
+					return res;
+				}
+			} else if (a1[i] != a2[i]) {
 				return false;
 			}
 		}
