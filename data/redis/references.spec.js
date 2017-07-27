@@ -26,7 +26,7 @@ let lib = {};
 module.exports = function (client) {
 	lib = ReferenceFactory(client.List, client.Collection, client);
 
-	describe('References', () => {
+	describe('@References', () => {
 		describe('#getReferenceString', () => {
 			it('Should get a reference string', () => {
 				assert.equal(lib.getReferenceString(TestKey), TestReference);
@@ -49,10 +49,10 @@ module.exports = function (client) {
 				let stringBuilder = StringBuilderFactory();
 				stringBuilder.append(TestKey);
 
-				let ref = lib.createReference(MockObj, stringBuilder);
-
-				assert.equal(is.object(ref), true);
-				assert.deepEqual(ref, ReferencedObject);
+				lib.createReference(MockObj, stringBuilder, (ref) => {
+					assert.equal(is.object(ref), true);
+					assert.deepEqual(ref, ReferencedObject);
+				});
 			});
 		});
 

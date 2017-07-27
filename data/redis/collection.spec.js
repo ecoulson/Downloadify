@@ -19,7 +19,7 @@ const testObj = {
 
 
 module.exports = function (lib) {
-	describe('Collection', () => {
+	describe('@Collection', () => {
 		describe('#createCollection', () => {
 			it(`Should create a new collection at key ${CollectionKey}`, (done) => {
 				lib.create(CollectionKey, testObj, (success, res) => {

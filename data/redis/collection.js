@@ -78,17 +78,27 @@ function createCollection(key, data, next) {
 			return next(false);
 		}
 		sb.append(getCollectionKey(key));
-		data = Reference.createReference(data, sb);
-		data._key = getCollectionKey(data._key);
-
-		connection.hmset(key, data, (err, res) => {
-			if (err) {
-				return console.error(err);
-			}
-			assert.equal(is.object(data), true);
-			return next(true, json);
+		Reference.createReference(data, sb, (data) => {
+			data._key = getCollectionKey(data._key);
+			connection.hmset(key, data, (err, res) => {
+				if (err) {
+					return console.error(err);
+				}
+				assert.equal(is.object(data), true);
+				return next(true, json);
+			});
 		});
 	});
+}
+
+//creates a simple collection
+function simpleCreate(key, data, next) {
+	assert.equal(is.function(next), true);
+	assert.equal(is.object(data), true);
+
+	connection.hmset(key, data, (err, res) => {
+		return next();
+	})
 }
 
 // gets all collections in the database and returns an array of them to
@@ -196,6 +206,7 @@ module.exports = function collection(rawConnection) {
 		getAllBy: getCollectionsBy,
 		getAll: getAllCollections,
 		create: createCollection,
+		simpleCreate: simpleCreate,
 		delete: deleteCollection,
 		update: setCollection,
 		getCollectionKey: getCollectionKey,

@@ -1,7 +1,10 @@
+const assert = require('assert');
+
 function StringBuilder() {
 	const chars = [];
 
 	function append(value) {
+		value + '';
 		for (let i = 0; i < value.length; i++) {
 			chars.push(value[i]);
 		}

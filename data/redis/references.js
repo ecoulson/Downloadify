@@ -12,6 +12,7 @@ function getReferences(collection, done) {
 	assert.equal(is.function(done), true);
 
 	const tasks = [];
+	// console.log(collection);
 
 	for (var k in collection) {
 		if (is.string(collection[k]) && collection[k].includes('redisRef:///')) {
@@ -121,60 +122,93 @@ function deleteReferences(collection) {
 
 // create new collection by referencing a javascript object literal. Returns
 // the referenced object literal.
-function referenceCollection(json, stringBuilder) {
+function referenceCollection(json, stringBuilder, done) {
 	assert.equal(is.object(stringBuilder), true);
+	let tasks = [];
 
 	let flattened = {};
 	for (let key in json) {
-		let value = handleKey(key, json[key], stringBuilder);
-		flattened[key] = value;
+		tasks.push((next) => {
+			let k = key;
+			handleKey(k, json[k], stringBuilder, (value) => {
+				flattened[key] = value;
+				// console.log(key, ":", value);
+				return next();
+			});
+		});
 	}
-	return flattened;
+	executeTasks(tasks, flattened, () => {
+
+		return done(flattened);
+	});
 }
 
 // handles an objects key and returns a reference string or a primative
 // value to be set in the collection
-function handleKey(key, value, stringBuilder) {
+function handleKey(key, value, stringBuilder, next) {
 	if (is.array(value)) {
-		return handleList(key, value, stringBuilder);
+		handleList(key, value, stringBuilder, (value) => {
+			return next(value);
+		});
 	} else if (is.object(value)) {
-		return handleObject(key, value, stringBuilder);
+		handleObject(key, value, stringBuilder, (value) => {
+			return next(value);
+		});
 	} else {
-		return value;
+		return next(value);
 	}
 }
 
 // handles a list by adding it to the database and creating and returning
 // its reference string.
-function handleList(key, array, stringBuilder) {
+function handleList(key, array, stringBuilder, next) {
 	let listKey = `/${list.getKey(key)}`;
 	stringBuilder.append(listKey);
 	let path = stringBuilder.toString();
-	stringBuilder.remove(listKey);
 
 	let ref = getReferenceString(path);
 	array.forEach((elem, i) => {
-		let item = handleKey(i, elem, stringBuilder);
-		list.add(path, item, (value) => {
+		handleKey(i, elem, stringBuilder, (item) => {
+			list.add(path, item, () => {
+				return next(ref);
+			});
 		});
 	});
-	return ref;
+	stringBuilder.remove(listKey);
 }
 
 // handles an object by adding it to the database and creating and returning
 // its reference string
-function handleObject(key, obj, stringBuilder) {
+function handleObject(key, obj, stringBuilder, next) {
 	let collectionKey = `/${Collection.getCollectionKey(key)}`;
 	stringBuilder.append(collectionKey);
 	let path = stringBuilder.toString();
-	stringBuilder.remove(collectionKey);
 
 	let ref = getReferenceString(path);
-	let info = referenceCollection(obj, stringBuilder);
-	info._key = path;
-	Collection.create(path, info, (success, data) => {
+	referenceCollection(obj, stringBuilder, (info) => {
+		info._key = path;
+		Collection.simpleCreate(path, info, () => {
+
+			return next(ref);
+		});
 	});
-	return ref;
+	stringBuilder.remove(collectionKey);
+}
+
+// execute all async tasks in a sequential manner
+function executeSequentialTasks(tasks, next) {
+	// console.log('here');
+	function iterate(index) {
+		let task = tasks[index];
+		if (index === tasks.length) {
+			return next();
+		}
+
+		task(() => {
+			iterate(index + 1);
+		});
+	}
+	iterate(0);
 }
 
 // gets the reference object by receiving the reference string

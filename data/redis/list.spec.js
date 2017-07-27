@@ -19,7 +19,7 @@ module.exports = function (lib) {
 		}
 	}
 
-	describe('List', () => {
+	describe('@List', () => {
 		describe('#add', () => {
 			it('Should add an element called "test" to a list', (done) => {
 				lib.add(ListTestKey, ListAddItem, (res) => {
