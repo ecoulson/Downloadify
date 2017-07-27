@@ -3,7 +3,7 @@ const is = require('is_js');
 const uniqid = require('uniqid');
 
 const ReferenceFactory = require('./references');
-const StringBuilder = require('../../util/StringBuilder');
+const StringBuilder = require('../util/StringBuilder');
 const QueryLib = require('../util/query');
 const List = require('./list');
 
@@ -80,6 +80,7 @@ function createCollection(key, data, next) {
 		sb.append(getCollectionKey(key));
 		data = Reference.createReference(data, sb);
 		data._key = getCollectionKey(data._key);
+
 		connection.hmset(key, data, (err, res) => {
 			if (err) {
 				return console.error(err);

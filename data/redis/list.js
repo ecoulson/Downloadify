@@ -10,7 +10,7 @@ function addListItem(key, item, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
 
-	connection.lpush(key, item, (err, res) => {
+	connection.rpush(key, item, (err, res) => {
 		if (err) {
 			return console.error(err);
 		}

@@ -121,12 +121,12 @@ function deleteReferences(collection) {
 
 // create new collection by referencing a javascript object literal. Returns
 // the referenced object literal.
-function referenceCollection(json, sb) {
-	assert.equal(is.object(sb), true);
+function referenceCollection(json, stringBuilder) {
+	assert.equal(is.object(stringBuilder), true);
 
 	let flattened = {};
 	for (let key in json) {
-		let value = handleKey(key, json[key], sb);
+		let value = handleKey(key, json[key], stringBuilder);
 		flattened[key] = value;
 	}
 	return flattened;
@@ -134,11 +134,11 @@ function referenceCollection(json, sb) {
 
 // handles an objects key and returns a reference string or a primative
 // value to be set in the collection
-function handleKey(key, value, sb) {
+function handleKey(key, value, stringBuilder) {
 	if (is.array(value)) {
-		return handleList(key, value, sb);
+		return handleList(key, value, stringBuilder);
 	} else if (is.object(value)) {
-		return handleObject(key, value, sb);
+		return handleObject(key, value, stringBuilder);
 	} else {
 		return value;
 	}
@@ -146,12 +146,15 @@ function handleKey(key, value, sb) {
 
 // handles a list by adding it to the database and creating and returning
 // its reference string.
-function handleList(key, array, sb) {
-	sb.append(`/${list.getKey(key)}`);
-	let path = sb.toString();
+function handleList(key, array, stringBuilder) {
+	let listKey = `/${list.getKey(key)}`;
+	stringBuilder.append(listKey);
+	let path = stringBuilder.toString();
+	stringBuilder.remove(listKey);
+
 	let ref = getReferenceString(path);
 	array.forEach((elem, i) => {
-		let item = handleKey(i, elem, path);
+		let item = handleKey(i, elem, stringBuilder);
 		list.add(path, item, (value) => {
 		});
 	});
@@ -160,13 +163,17 @@ function handleList(key, array, sb) {
 
 // handles an object by adding it to the database and creating and returning
 // its reference string
-function handleObject(key, obj, sb) {
-	sb.append(`/${Collection.getCollectionKey(key)}`);
-	let path = sb.toString();
+function handleObject(key, obj, stringBuilder) {
+	let collectionKey = `/${Collection.getCollectionKey(key)}`;
+	stringBuilder.append(collectionKey);
+	let path = stringBuilder.toString();
+	stringBuilder.remove(collectionKey);
+
 	let ref = getReferenceString(path);
-	let info = referenceCollection(obj, sb);
+	let info = referenceCollection(obj, stringBuilder);
 	info._key = path;
-	Collection.create(path, info, (success, data) => {});
+	Collection.create(path, info, (success, data) => {
+	});
 	return ref;
 }
 
@@ -188,11 +195,10 @@ function getReferenceString(path) {
 	return `redisRef:///${path}`;
 }
 
-module.exports = function (l, c, C) {
-	list = l;
-	Collection = c;
-	connection = C;
-
+module.exports = function (listLib, collectionLib, client) {
+	list = listLib;
+	Collection = collectionLib;
+	connection = client;
 	return {
 		getReferenceString: getReferenceString,
 		getReferenceObj: getRefObj,
