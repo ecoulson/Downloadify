@@ -1,11 +1,17 @@
 const assert = require('assert');
 const is = require('is_js');
 
+const StringBuilderFactory = require('../util/StringBuilder');
+
 let Collection = {};
 let list = {};
 let connection = {};
 
+// gets all references in collection and returns a javascript object literal
+// to the callback
 function getReferences(collection, done) {
+	assert.equal(is.object(collection), true);
+	assert.equal(is.function(done), true);
 	const tasks = [];
 
 	for (var k in collection) {
@@ -25,11 +31,16 @@ function getReferences(collection, done) {
 		}
 	}
 	executeTasks(tasks, collection, (res) => {
+		assert.equal(is.object(res), true);
 		return done(res);
 	});
 }
 
+// dereferences a hash and updates the javascript object and calls its
+// callback
 function dereferenceHash(redisKey, key, collection, next) {
+	assert.equal(is.function(next), true);
+
 	Collection.get(redisKey, (hash) => {
 		getReferences(hash, (dereferencedHash) => {
 			collection[key] = dereferencedHash;
@@ -38,7 +49,11 @@ function dereferenceHash(redisKey, key, collection, next) {
 	});
 }
 
+// dereferences array and updates the javascript object and calls its
+// callback
 function dereferenceArray(redisKey, key, collection, next) {
+	assert.equal(is.function(next), true);
+
 	list.all(redisKey, (array) => {
 		getReferences(array, (dereferencedArray) => {
 			collection[key] = dereferencedArray;
@@ -47,7 +62,12 @@ function dereferenceArray(redisKey, key, collection, next) {
 	});
 }
 
+// executes tasks in parallel and calls a callback passing the javascript
+// collection
 function executeTasks(tasks, collection, done) {
+	assert.equal(is.function(done), true);
+	assert.equal(is.array(tasks), true);
+
 	let completed = 0;
 	if (tasks.length == 0) {
 		return done(collection);
@@ -61,6 +81,7 @@ function executeTasks(tasks, collection, done) {
 	})
 }
 
+// sets all references in a collection
 function setReferences(json) {
 	for (let k in json) {
 		if (is.array(json[k])) {
@@ -81,6 +102,7 @@ function setReferences(json) {
 	}
 }
 
+// deletes all collections with references in the collection
 function deleteReferences(collection) {
 	for (var key in collection) {
 		if (is.string(collection[key]) && collection[key].includes('redisRef:///')) {
@@ -98,48 +120,49 @@ function deleteReferences(collection) {
 	}
 }
 
-function referenceCollection(json, sb) {
-	let flattened = {};
-	for (let key in json) {
-		let value = handleKey(key, json[key], sb);
-		flattened[key] = value;
+function createReference(key, json) {
+	let stringBuilder = StringBuilderFactory();
+	stringBuilder.append(key);
+	json._key = stringBuilder.toString();
+	json._id = Collection.getID();
+	let path = stringBuilder.toString();
+
+	let collections = {};
+	collections[path] = flattenJSON(json, stringBuilder, collections);
+	return collections;
+}
+
+function flattenJSON(json, stringBuilder, collections) {
+	for (let k in json) {
+		if (is.array(json[k])) {
+			let str = `/${list.getKey(k)}`;
+			stringBuilder.append(str);
+
+			let path = stringBuilder.toString();
+			collections[path] = flattenJSON(json[k], stringBuilder, collections);
+			json[k] = getReferenceString(path);
+
+			stringBuilder.remove(str);
+		} else if (is.object(json[k])) {
+			let str = `/${Collection.getCollectionKey(k)}`;
+			stringBuilder.append(str);
+			json[k]._key = stringBuilder.toString();
+			json[k]._id = Collection.getID();
+
+			let path = stringBuilder.toString();
+			collections[path] = flattenJSON(json[k], stringBuilder, collections);
+			json[k] = getReferenceString(path);
+
+			stringBuilder.remove(str);
+		}
 	}
-	return flattened;
+	return json;
 }
 
-function handleKey(key, value, sb) {
-	if (is.array(value)) {
-		return handleList(key, value, sb);
-	} else if (is.object(value)) {
-		return handleObject(key, value, sb);
-	} else {
-		return value;
-	}
-}
-
-function handleList(key, array, sb) {
-	sb.append(`/${list.getKey(key)}`);
-	let path = sb.toString();
-	let ref = getReferenceString(path);
-	array.forEach((elem, i) => {
-		let item = handleKey(i, elem, path);
-		list.add(path, item, (value) => {
-		});
-	});
-	return ref;
-}
-
-function handleObject(key, obj, sb) {
-	sb.append(`/${Collection.getCollectionKey(key)}`);
-	let path = sb.toString();
-	let ref = getReferenceString(path);
-	let info = referenceCollection(obj, sb);
-	info._key = path;
-	Collection.create(path, info, (success, data) => {});
-	return ref;
-}
-
+// gets the reference object by receiving the reference string
 function getRefObj(value) {
+	assert.equal(is.string(value), true);
+
 	let redisKey = value.split('redisRef:///')[1];
 	let parts = redisKey.split('/');
 	let type = parts[parts.length - 1].split(':')[0];
@@ -149,19 +172,19 @@ function getRefObj(value) {
 	};
 }
 
+// returns the reference string of a collections path
 function getReferenceString(path) {
 	return `redisRef:///${path}`;
 }
 
-module.exports = function (l, c, C) {
-	list = l;
-	Collection = c;
-	connection = C;
-
+module.exports = function (listLib, collectionLib, client) {
+	list = listLib;
+	Collection = collectionLib;
+	connection = client;
 	return {
 		getReferenceString: getReferenceString,
 		getReferenceObj: getRefObj,
-		createReference: referenceCollection,
+		createReference: createReference,
 		deleteReferences: deleteReferences,
 		setReferences: setReferences,
 		getReferences: getReferences,

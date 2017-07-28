@@ -7,12 +7,15 @@ function getClient() {
 }
 
 function closeClient() {
-	client.close(client);
+	if (client.hasOwnProperty('connection')) {
+		client.connection.end(true);
+	}
 }
 
 function createClient() {
 	let newConnection = redis.createClient();
 	client = redisWrapper(newConnection);
+	client.connection = newConnection;
 	return client;
 }
 

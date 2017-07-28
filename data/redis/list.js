@@ -10,7 +10,7 @@ function addListItem(key, item, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
 
-	connection.lpush(key, item, (err, res) => {
+	connection.rpush(key, item, (err, res) => {
 		if (err) {
 			return console.error(err);
 		}
@@ -27,6 +27,7 @@ function getListItem(key, index, next) {
 	checkIndex(key, index, (res) => {
 		assert.equal(res, true);
 		getOneElement(key, index, (elem) => {
+			assert.equal(is.not.undefined(elem) && is.not.null(elem), true);
 			return next(elem);
 		});
 	});
@@ -36,17 +37,30 @@ function getListItem(key, index, next) {
 function getList(key, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
+
 	connection.lrange(key, 0, -1, (err, res) => {
 		if (err) {
 			return console.error(err);
 		}
+		assert.equal(is.array(res), true);
 		return next(res);
+	});
+}
+
+// gets one element from the list at the passed key and the element
+// at the passed index. Passes the retrieved element to the callback
+function getOneElement(key, index, next) {
+	connection.lrange(key, index, index, (err, res) => {
+		if (err) {
+			return console.error(err);
+		}
+		assert(is.array(res) && res.length == 1, true);
+		return next(res[0]);
 	});
 }
 
 // removes an item from the end of the list and passes it to a callback
 function removeListItem(key, next) {
-
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
 
@@ -54,20 +68,23 @@ function removeListItem(key, next) {
 		if (err) {
 			return console.error(err);
 		}
+		assert.equal(is.not.undefined(res) && is.not.null(res), true);
 		return next(res);
 	});
 }
 
 // removes all items in the list with the passed value, passes
-// the amount of elements removed to the callback
+// the value to the callback
 function removeValue(key, value, next) {
 	key = getListKey(key);
 	assert.equal(is.function(next), true);
+	assert.equal(is.not.undefined(value) && is.not.null(value), true);
+
 	connection.lrem(key, 0, value, (err, res) => {
 		if (err) {
 			return console.error(err);
 		}
-		return next(res);
+		return next(value);
 	});
 }
 
@@ -77,6 +94,7 @@ function setListItem(key, index, item, next) {
 	key = getListKey(key);
 	assert.equal(is.number(index), true);
 	assert.equal(is.function(next), true);
+	assert.equal(is.not.undefined(item) && is.not.null(item), true);
 
 	checkIndex(key, index, (res) => {
 		assert.equal(res, true);
@@ -91,7 +109,11 @@ function setListItem(key, index, item, next) {
 
 // deletes the list at the passed key. Passes the deleted list to the callback
 function deleteList(key, next) {
+	key = getListKey(key);
+	assert.equal(is.function(next), true);
+
 	getList(key, (list) => {
+		assert.equal(is.array(list), true);
 		connection.del(key, (err, res) => {
 			if (err) {
 				return console.error(err);
@@ -110,6 +132,7 @@ function getListLength(key, next) {
 		if (err) {
 			return console.error(err);
 		}
+		assert.equal(is.number(res), true);
 		return next(res);
 	});
 }
@@ -132,6 +155,9 @@ function clearList(key, next) {
 // checks if an item is contained within a list at the given key. Whether the
 // value exists is passed to the callback
 function listContains(key, item, next) {
+	assert.equal(is.function(next), true);
+	assert.equal(is.not.undefined(item) && is.not.null(item), true);
+
 	let contains = false;
 	getList(key, (list) => {
 		list.forEach((x) => {
@@ -143,29 +169,12 @@ function listContains(key, item, next) {
 	});
 }
 
-//changes the basic key value to a list key
-function getListKey(key) {
-	if (key.includes('list:')) {
-		return key;
-	}
-	return `list:${key}`;
-}
-
-// gets one element from the list at the passed key and the element
-// at the passed index. Passes the retrieved element to the callback
-function getOneElement(key, index, next) {
-	connection.lrange(key, index, index, (err, res) => {
-		if (err) {
-			return console.error(err);
-		}
-		assert(is.array(res) && res.length == 1, true);
-		return next(res[0]);
-	});
-}
-
 // checks the index is with in the positive and negative bounds of reids
 // indecies. Passes a bool representing if it is in bounds.
 function checkIndex(key, index, next) {
+	assert.equal(is.number(index), true);
+	assert.equal(is.function(next), true);
+
 	getListLength(key, (count) => {
 		if (index >= count || index <= -count) {
 			throw new Error('Index Out Of Bounds');
@@ -174,8 +183,17 @@ function checkIndex(key, index, next) {
 	});
 }
 
-// parallelize a task, takes in a task, the amount of tasks, and arrray of args and a
-// callback when all tasks are done.
+//changes the basic key value to a list key
+function getListKey(key) {
+	key += '';
+	if (key.includes('list:')) {
+		return key;
+	}
+	return `list:${key}`;
+}
+
+// parallelize a task, takes in a task, the amount of tasks, and arrray of args
+// and a callback when all tasks are done.
 function parallelize(task, count, args, next) {
 	let completed = 0;
 	for (let i = 0; i < count; i++) {

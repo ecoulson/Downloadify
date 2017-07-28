@@ -16,15 +16,23 @@ const testObj = {
 		a:1,
 	},
 };
+const RefObj = {
+	type: 'list',
+  a: '1',
+  b: 'redisRef:///collection:0/list:b',
+  c: 'redisRef:///collection:0/collection:c',
+}
 
+const json = Object.assign({}, testObj);
 
 module.exports = function (lib) {
-	describe('Collection', () => {
+	describe('@Collection', () => {
 		describe('#createCollection', () => {
 			it(`Should create a new collection at key ${CollectionKey}`, (done) => {
 				lib.create(CollectionKey, testObj, (success, res) => {
 					assert.equal(success, true);
-					return done(null, res);
+					assert.deepEqual(json, res);
+					return done(null);
 				});
 			});
 		});
@@ -43,6 +51,13 @@ module.exports = function (lib) {
 		describe('#getCollection', () => {
 			it(`Should get a collection at this key ${CollectionKey}`, (done) => {
 				lib.get(CollectionKey, (collection) => {
+					delete collection.c._id;
+					delete collection.c._key;
+					delete collection._id;
+					delete collection._key;
+					delete json.c._id;
+					delete json.c._key;
+					assert.deepEqual(collection, json);
 					return done(null, collection);
 				});
 			});
@@ -72,6 +87,11 @@ module.exports = function (lib) {
 		describe('#deleteCollection', () => {
 			it(`Delete collection with key of ${CollectionKey}`, (done) => {
 				lib.delete(CollectionKey, (res) => {
+					delete res._key;
+					delete res._id;
+					delete res.c._key;
+					delete res.c._id;
+					assert.deepEqual(res, RefObj);
 					done(null, res);
 				});
 			});
