@@ -6,7 +6,17 @@ const StringBuilderFactory = require('../util/StringBuilder');
 
 const TestReference = 'redisRef:///collection:test';
 const TestKey = 'collection:test';
+const TestKey2 = 'collection:test2';
 const MockObj = {
+	a: 1,
+	b: [1,2],
+	c: {
+		a:1,
+		b:2,
+		c:3,
+	},
+};
+const MockObj2 = {
 	a: 1,
 	b: [1,2],
 	c: {
@@ -45,13 +55,13 @@ module.exports = function (client) {
 		});
 
 		describe('#createReference', () => {
-			it('Should create a reference object represented in json', () => {
-				let stringBuilder = StringBuilderFactory();
-				stringBuilder.append(TestKey);
-
-				lib.createReference(MockObj, stringBuilder, (ref) => {
-					assert.equal(is.object(ref), true);
-					assert.deepEqual(ref, ReferencedObject);
+			it('Should create a reference object represented in json', (done) => {
+				client.Collection.create(TestKey, MockObj, (success, obj, z) => {
+					assert.equal(success, true);
+					delete obj.c._key;
+					delete obj.c._id;
+					assert.deepEqual(MockObj2, obj);
+					return done(null);
 				});
 			});
 		});
@@ -63,7 +73,7 @@ module.exports = function (client) {
 					assert.equal(is.object(json), true);
 					delete json.c._key;
 					delete json.c._id;
-					assert.deepEqual(json, MockObj);
+					assert.deepEqual(json, MockObj2);
 					return done(null);
 				});
 			});

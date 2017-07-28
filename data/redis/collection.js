@@ -24,6 +24,7 @@ function getCollection(key, next) {
 			return console.error(err);
 		}
 		assert.equal(is.object(collection), true);
+
 		Reference.getReferences(collection, (data) => {
 			assert.equal(is.object(collection), true);
 			return next(data);
@@ -62,43 +63,86 @@ function getCollectionsBy(queryObj, next) {
 
 // creates a collection at the passed key using the json data and returns
 // wether or not the creation was successful and the object to the callback
-function createCollection(key, data, next) {
-	assert.equal(is.function(next), true);
+function createCollection(key, data, done) {
+	assert.equal(is.function(done), true);
 	assert.equal(is.object(data), true);
 
-	let json = data;
+	let original = Object.assign({}, data);
+
+	data._key = key;
+	data._id = getID();
 	let sb = StringBuilder();
 
 	key = getCollectionKey(key);
-	data._key = key;
-	data._id = getID();
 
+	let tasks = [];
+	let collections = Reference.createReference(key, data);
+
+	for (let k in collections) {
+		let collection = collections[k];
+		if (is.array(collection)) {
+			tasks.push((next) => {
+				let key = k;
+				addList(key, collection, () => {
+					return next();
+				})
+			})
+		} else {
+			tasks.push((next) => {
+				let key = k;
+				addCollection(key, collection, (success) => {
+					if (!success) {
+						return done(false);
+					}
+					return next();
+				})
+			});
+		}
+	}
+
+	executeTasks(tasks, () => {
+		return done(true, original);
+	});
+}
+
+function addList(key, array, done) {
+	let tasks = [];
+	array.forEach((elem) => {
+		tasks.push((next) => {
+			list.add(key, elem, () => {
+				return next();
+			});
+		});
+	});
+
+	executeTasks(tasks, () => {
+		return done();
+	});
+}
+
+function addCollection(key, obj, next) {
 	addKeyToList(key, (exists) => {
 		if (exists) {
 			return next(false);
 		}
-		sb.append(getCollectionKey(key));
-		Reference.createReference(data, sb, (data) => {
-			data._key = getCollectionKey(data._key);
-			connection.hmset(key, data, (err, res) => {
-				if (err) {
-					return console.error(err);
-				}
-				assert.equal(is.object(data), true);
-				return next(true, json);
-			});
+		connection.hmset(key, obj, (err, res) => {
+			if (err) {
+				return console.error(err);
+			}
+			return next(true);
 		});
-	});
+	})
 }
 
-//creates a simple collection
-function simpleCreate(key, data, next) {
-	assert.equal(is.function(next), true);
-	assert.equal(is.object(data), true);
-
-	connection.hmset(key, data, (err, res) => {
-		return next();
-	})
+function executeTasks(tasks, done) {
+	let completed = 0;
+	tasks.forEach((task) => {
+		task(() => {
+			if (++completed == tasks.length) {
+				return done();
+			}
+		});
+	});
 }
 
 // gets all collections in the database and returns an array of them to
@@ -206,10 +250,10 @@ module.exports = function collection(rawConnection) {
 		getAllBy: getCollectionsBy,
 		getAll: getAllCollections,
 		create: createCollection,
-		simpleCreate: simpleCreate,
 		delete: deleteCollection,
 		update: setCollection,
 		getCollectionKey: getCollectionKey,
+		getID: getID,
 	}
 
 	connection = rawConnection;

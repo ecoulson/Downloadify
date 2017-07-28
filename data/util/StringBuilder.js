@@ -1,16 +1,21 @@
 const assert = require('assert');
+const is = require('is_js');
 
 function StringBuilder() {
 	const chars = [];
 
+	//appends a value to the string
 	function append(value) {
+		assert.equal(is.not.object(value), true);
 		value + '';
 		for (let i = 0; i < value.length; i++) {
 			chars.push(value[i]);
 		}
 	}
 
+	// removes any instance of the value from within the string
 	function remove(value) {
+		assert.equal(is.not.object(value), true);
 		let j = 0;
 		let strs = [];
 		for (let i = 0; i < chars.length; i++) {
@@ -33,6 +38,7 @@ function StringBuilder() {
 		}
 	}
 
+	// returns the string
 	let toString = function toString() {
 		return chars.reduce((x, char) => {
 			return x + char;

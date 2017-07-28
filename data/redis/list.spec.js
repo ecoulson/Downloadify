@@ -72,7 +72,7 @@ module.exports = function (lib) {
 			it(`Should remove all of ${fakeValue}`, (done) => {
 				generateFakeData(FakeDataSize, fakeValue, () => {
 					lib.removeValue(ListTestKey, fakeValue, (res) => {
-						assert(res, FakeDataSize);
+						assert.equal(res, fakeValue);
 						return done(null, res);
 					});
 				});

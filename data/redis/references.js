@@ -1,6 +1,8 @@
 const assert = require('assert');
 const is = require('is_js');
 
+const StringBuilderFactory = require('../util/StringBuilder');
+
 let Collection = {};
 let list = {};
 let connection = {};
@@ -10,9 +12,7 @@ let connection = {};
 function getReferences(collection, done) {
 	assert.equal(is.object(collection), true);
 	assert.equal(is.function(done), true);
-
 	const tasks = [];
-	// console.log(collection);
 
 	for (var k in collection) {
 		if (is.string(collection[k]) && collection[k].includes('redisRef:///')) {
@@ -120,95 +120,43 @@ function deleteReferences(collection) {
 	}
 }
 
-// create new collection by referencing a javascript object literal. Returns
-// the referenced object literal.
-function referenceCollection(json, stringBuilder, done) {
-	assert.equal(is.object(stringBuilder), true);
-	let tasks = [];
-
-	let flattened = {};
-	for (let key in json) {
-		tasks.push((next) => {
-			let k = key;
-			handleKey(k, json[k], stringBuilder, (value) => {
-				flattened[key] = value;
-				// console.log(key, ":", value);
-				return next();
-			});
-		});
-	}
-	executeTasks(tasks, flattened, () => {
-
-		return done(flattened);
-	});
-}
-
-// handles an objects key and returns a reference string or a primative
-// value to be set in the collection
-function handleKey(key, value, stringBuilder, next) {
-	if (is.array(value)) {
-		handleList(key, value, stringBuilder, (value) => {
-			return next(value);
-		});
-	} else if (is.object(value)) {
-		handleObject(key, value, stringBuilder, (value) => {
-			return next(value);
-		});
-	} else {
-		return next(value);
-	}
-}
-
-// handles a list by adding it to the database and creating and returning
-// its reference string.
-function handleList(key, array, stringBuilder, next) {
-	let listKey = `/${list.getKey(key)}`;
-	stringBuilder.append(listKey);
+function createReference(key, json) {
+	let stringBuilder = StringBuilderFactory();
+	stringBuilder.append(key);
+	json._key = stringBuilder.toString();
+	json._id = Collection.getID();
 	let path = stringBuilder.toString();
 
-	let ref = getReferenceString(path);
-	array.forEach((elem, i) => {
-		handleKey(i, elem, stringBuilder, (item) => {
-			list.add(path, item, () => {
-				return next(ref);
-			});
-		});
-	});
-	stringBuilder.remove(listKey);
+	let collections = {};
+	collections[path] = flattenJSON(json, stringBuilder, collections);
+	return collections;
 }
 
-// handles an object by adding it to the database and creating and returning
-// its reference string
-function handleObject(key, obj, stringBuilder, next) {
-	let collectionKey = `/${Collection.getCollectionKey(key)}`;
-	stringBuilder.append(collectionKey);
-	let path = stringBuilder.toString();
+function flattenJSON(json, stringBuilder, collections) {
+	for (let k in json) {
+		if (is.array(json[k])) {
+			let str = `/${list.getKey(k)}`;
+			stringBuilder.append(str);
 
-	let ref = getReferenceString(path);
-	referenceCollection(obj, stringBuilder, (info) => {
-		info._key = path;
-		Collection.simpleCreate(path, info, () => {
+			let path = stringBuilder.toString();
+			collections[path] = flattenJSON(json[k], stringBuilder, collections);
+			json[k] = getReferenceString(path);
 
-			return next(ref);
-		});
-	});
-	stringBuilder.remove(collectionKey);
-}
+			stringBuilder.remove(str);
+		} else if (is.object(json[k])) {
+			let str = `/${Collection.getCollectionKey(k)}`;
+			stringBuilder.append(str);
+			json[k]._key = stringBuilder.toString();
+			json[k]._id = Collection.getID();
 
-// execute all async tasks in a sequential manner
-function executeSequentialTasks(tasks, next) {
-	// console.log('here');
-	function iterate(index) {
-		let task = tasks[index];
-		if (index === tasks.length) {
-			return next();
+			let path = stringBuilder.toString();
+			collections[path] = flattenJSON(json[k], stringBuilder, collections);
+			json[k] = getReferenceString(path);
+
+			stringBuilder.remove(str);
 		}
-
-		task(() => {
-			iterate(index + 1);
-		});
 	}
-	iterate(0);
+	return json;
 }
 
 // gets the reference object by receiving the reference string
@@ -236,7 +184,7 @@ module.exports = function (listLib, collectionLib, client) {
 	return {
 		getReferenceString: getReferenceString,
 		getReferenceObj: getRefObj,
-		createReference: referenceCollection,
+		createReference: createReference,
 		deleteReferences: deleteReferences,
 		setReferences: setReferences,
 		getReferences: getReferences,

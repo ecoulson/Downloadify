@@ -5,7 +5,7 @@ const StringBuilderFactory = require('./StringBuilder');
 const StringBuilder = StringBuilderFactory();
 
 module.exports = function () {
-	describe('StringBuilder', () => {
+	describe('@StringBuilder', () => {
 		describe('#append', () => {
 			it('Should append value to string', () => {
 				StringBuilder.append('abcdefgh');
