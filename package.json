@@ -31,7 +31,7 @@
     "nodemon": "^1.11.0",
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
-    "uniqid": "^4.1.1"
+    "uniqid": "^4.1.1",
     "promisify-node": "^0.4.0"
   },
   "devDependencies": {
